@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --                              Ada Web Server                              --
 --                                                                          --
---                     Copyright (C) 2000-2009, AdaCore                     --
+--                     Copyright (C) 2000-2011, AdaCore                     --
 --                                                                          --
 --  This library is free software; you can redistribute it and/or modify    --
 --  it under the terms of the GNU General Public License as published by    --
@@ -317,15 +317,6 @@ package body AWS.Net.SSL is
       end if;
    end Error_Str;
 
-   --------------
-   -- Finalize --
-   --------------
-
-   overriding procedure Finalize (Socket : in out Socket_Type) is
-   begin
-      Std.Finalize (Std.Socket_Type (Socket));
-   end Finalize;
-
    ----------
    -- Free --
    ----------
@@ -637,16 +628,6 @@ package body AWS.Net.SSL is
          Config.Set_Session_Cache_Size (Size);
       end if;
    end Set_Session_Cache_Size;
-
-   -----------------
-   -- Set_Timeout --
-   -----------------
-
-   overriding procedure Set_Timeout
-     (Socket : in out Socket_Type; Timeout : Duration) is
-   begin
-      Set_Timeout (Net.Socket_Type (Socket), Timeout);
-   end Set_Timeout;
 
    --------------
    -- Shutdown --
