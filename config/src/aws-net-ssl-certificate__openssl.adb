@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --                              Ada Web Server                              --
 --                                                                          --
---                     Copyright (C) 2003-2009, AdaCore                     --
+--                     Copyright (C) 2003-2011, AdaCore                     --
 --                                                                          --
 --  This library is free software; you can redistribute it and/or modify    --
 --  it under the terms of the GNU General Public License as published by    --
@@ -25,8 +25,10 @@
 --  covered by the  GNU Public License.                                     --
 ------------------------------------------------------------------------------
 
+with Ada.Strings.Fixed;
+
 with System;
-with Interfaces.C.Strings;
+with Interfaces.C;
 
 package body AWS.Net.SSL.Certificate is
 
@@ -74,9 +76,41 @@ package body AWS.Net.SSL.Certificate is
    ------------------
 
    function NAME_oneline (Name : TSSL.X509_Name) return String is
+      use TSSL;
+      use type Interfaces.C.int;
+      IO : constant BIO_Access := BIO_new (BIO_s_mem);
+      RC : Interfaces.C.int;
    begin
-      return Interfaces.C.Strings.Value
-        (TSSL.X509_NAME_oneline (Name, TSSL.Null_Pointer, 0));
+      RC := X509_NAME_print_ex
+              (Output => IO,
+               Name   => Name,
+               Indent => 0,
+               flags  => XN_FLAG_RFC2253_DIRECT);
+
+      declare
+         use Ada.Strings.Fixed;
+         Result : String (1 .. Natural (BIO_ctrl (IO, BIO_CTRL_PENDING)));
+         EMail  : constant String := ",emailAddress=";
+         Idx    : Natural;
+      begin
+         if BIO_read (IO, Result'Address, Result'Length) /= Result'Length
+           or else RC /= Result'Length
+         then
+            raise Constraint_Error;
+         end if;
+
+         BIO_free (IO);
+
+         Idx := Index (Result, EMail);
+
+         if Idx = 0 then
+            return Result;
+         end if;
+
+         --  Make the certificate output like in GNUTLS
+
+         return Replace_Slice (Result, Idx, Idx + EMail'Length - 1, ",EMAIL=");
+      end;
    end NAME_oneline;
 
    -------------
